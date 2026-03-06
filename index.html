@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Time Travel Through Music — Discover and listen to songs from 1970 to 2026. Browse by decade, search by artist or song.">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Retrowave">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <title>Retrowave — Time Travel Through Music</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    /* ============================================
+   RETROWAVE — RETRO VINYL MUSIC APP
+   Warm amber/gold palette · Vinyl motif
+   ============================================ */
+
+    /* ----- Reset & Custom Properties ----- */
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* Palette */
+      --bg-deep: #f0f9ff;
+      --bg-surface: #ffffff;
+      --bg-card: #ffffff;
+      --bg-glass: rgba(255, 255, 255, 0.8);
+      --bg-header: rgba(255, 255, 255, 0.9);
+      --bg-player: rgba(255, 255, 255, 0.95);
+      --border-color: rgba(59, 130, 246, 0.1);
+      --gold: #0ea5e9;
+      --gold-light: #38bdf8;
+      --amber: #3b82f6;
+      --amber-glow: rgba(59, 130, 246, 0.15);
+      --orange: #1d4ed8;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --white: #fff;
+
+      /* Brand additions */
+      --blue-primary: #3b82f6;
+      --blue-glow: rgba(59, 130, 246, 0.4);
+
+      /* Type */
+      --font-serif: 'Playfair Display', Georgia, serif;
+      --font-sans: 'Inter', system-ui, sans-serif;
+
+      /* Spacing & Radius */
+      --radius: 12px;
+      --radius-lg: 20px;
+      --transition: .3s ease;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* Noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ----- Scrollbar ----- */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-deep);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--amber);
+      border-radius: 4px;
+    }
+
+    /* ----- HEADER ----- */
+    .site-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 40px;
+      background: var(--bg-header);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-color);
+      transition: background var(--transition);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .vinyl-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, #141a16, #283a2d, #141a16, #1e2e23, #141a16);
+      border: 2px solid var(--gold);
+      display: grid;
+      place-items: center;
+      animation: spin 4s linear infinite;
+    }
+
+    .vinyl-hole {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gold);
+    }
+
+    .logo-text {
+      font-family: var(--font-serif);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--amber);
+    }
+
+    .main-nav {
+      display: flex;
+      gap: 32px;
+    }
+
+    .nav-link {
+      font-size: .9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      position: relative;
+      transition: color var(--transition);
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--gold);
+      transition: width var(--transition);
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--gold);
+    }
+
+    .nav-link:hover::after,
+    .nav-link.active::after {
+      width: 100%;
+    }
+
+    /* ----- HERO ----- */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 120px 40px 60px;
+      background:
+        radial-gradient(ellipse at 30% 50%, rgba(56, 189, 248, 0.15), transparent 60%),
+        radial-gradient(ellipse at 70% 30%, rgba(59, 130, 246, 0.1), transparent 50%),
+        var(--bg-deep);
+      overflow: hidden;
+      transition: background var(--transition);
+    }
+
+    body.theme-dark .hero {
+      background:
+        radial-gradient(ellipse at 30% 50%, rgba(255, 255, 255, 0.03), transparent 60%),
+        radial-gradient(ellipse at 70% 30%, rgba(255, 255, 255, 0.02), transparent 50%),
+        #000000;
+    }
+
+    .album-bg-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.4;
+      mix-blend-mode: multiply;
+      filter: none;
+    }
+
+    .bg-album {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .album-pf {
+      top: 10%;
+      left: 5%;
+      transform: rotate(-15deg);
+    }
+
+    .album-beatles {
+      top: 60%;
+      left: 8%;
+      transform: rotate(10deg);
+    }
+
+    .album-kc {
+      top: 15%;
+      right: 5%;
+      transform: rotate(15deg);
+    }
+
+    .album-lz {
+      top: 70%;
+      right: 10%;
+      transform: rotate(-10deg);
+    }
+
+    .album-drake {
+      top: 35%;
+      left: 12%;
+      transform: rotate(5deg);
+    }
+
+    .album-travis {
+      top: 85%;
+      left: 15%;
+      transform: rotate(-12deg);
+    }
+
+    .album-weeknd {
+      top: 40%;
+      right: 15%;
+      transform: rotate(-8deg);
+    }
+
+    .album-kendrick {
+      top: 85%;
+      right: 25%;
+      transform: rotate(12deg);
+    }
+
+    .album-kanye {
+      top: 5%;
+      left: 45%;
+      transform: rotate(-5deg);
+    }
+
+    .album-gnr {
+      top: 82%;
+      left: 3%;
+      transform: rotate(-15deg);
+    }
+
+    .hero-content {
+      display: flex;
+      align-items: center;
+      gap: 80px;
+      max-width: 1200px;
+      width: 100%;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-vinyl-container {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .vinyl-record {
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, #1e293b 0%, #334155 15%, #1e293b 30%, #475569 45%, #1e293b 60%, #334155 75%, #1e293b 90%, #334155 100%);
+      box-shadow:
+        0 0 0 6px #0f172a,
+        0 0 60px rgba(59, 130, 246, 0.2),
+        inset 0 0 80px rgba(0, 0, 0, .4);
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+
+    .vinyl-grooves {
+      position: absolute;
+      inset: 20px;
+      border-radius: 50%;
+      border: 1px solid rgba(212, 163, 74, .06);
+      box-shadow:
+        inset 0 0 0 10px rgba(212, 163, 74, .04),
+        inset 0 0 0 25px rgba(212, 163, 74, .03),
+        inset 0 0 0 42px rgba(212, 163, 74, .04),
+        inset 0 0 0 58px rgba(212, 163, 74, .03),
+        inset 0 0 0 75px rgba(212, 163, 74, .04),
+        inset 0 0 0 90px rgba(212, 163, 74, .03);
+    }
+
+    .vinyl-label {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--gold-light), var(--amber), #7a4a10);
+      display: grid;
+      place-items: center;
+      z-index: 2;
+      position: relative;
+      box-shadow: 0 0 20px rgba(212, 163, 74, .4);
+    }
+
+    .label-text {
+      font-family: var(--font-serif);
+      font-size: .72rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .5px;
+    }
+
+    .spinning {
+      animation: spin 6s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .vinyl-arm {
+      position: absolute;
+      top: -16px;
+      right: -30px;
+      width: 8px;
+      height: 180px;
+      background: linear-gradient(180deg, #888, #555);
+      border-radius: 4px;
+      transform: rotate(28deg);
+      transform-origin: top center;
+      box-shadow: 2px 4px 12px rgba(0, 0, 0, .5);
+    }
+
+    .vinyl-arm::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #999;
+      border: 2px solid #666;
+    }
+
+    .vinyl-arm::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 6px;
+      border-radius: 0 0 4px 4px;
+      background: #777;
+    }
+
+    /* Hero Text */
+    .hero-text {
+      flex: 1;
+    }
+
+    .hero-text h1 {
+      font-family: var(--font-serif);
+      font-size: 3.8rem;
+      font-weight: 900;
+      line-height: 1.12;
+      margin-bottom: 20px;
+    }
+
+    .gold-text {
+      background: linear-gradient(135deg, var(--gold-light), var(--orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      color: var(--text-muted);
+      font-size: 1.12rem;
+      max-width: 480px;
+      margin-bottom: 36px;
+    }
+
+    /* Search Box - Blue Theme */
+    .search-wrapper {
+      max-width: 540px;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: rgba(30, 58, 138, 0.3);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      border-radius: 60px;
+      padding: 6px 6px 6px 20px;
+      backdrop-filter: blur(12px);
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .search-box:focus-within {
+      border-color: var(--blue-primary);
+      box-shadow: 0 0 24px var(--blue-glow);
+    }
+
+    .search-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--blue-primary);
+      flex-shrink: 0;
+    }
+
+    .search-box input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: none;
+      color: var(--text);
+      font-size: .95rem;
+      padding: 12px 14px;
+      font-family: var(--font-sans);
+    }
+
+    .search-box input::placeholder {
+      color: rgba(147, 197, 253, 0.6);
+    }
+
+    .search-btn {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 60px;
+      background: linear-gradient(135deg, var(--blue-primary), #1e40af);
+      color: var(--white);
+      font-weight: 700;
+      font-size: .9rem;
+      cursor: pointer;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .search-btn:hover {
+      transform: scale(1.04);
+      box-shadow: 0 4px 20px var(--blue-glow);
+    }
+
+    /* ----- DECADE SECTION ----- */
+    .decade-section {
+      padding: 60px 40px 30px;
+      text-align: center;
+    }
+
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      margin-bottom: 32px;
+    }
+
+    .decade-dial {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .decade-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 2px solid rgba(212, 163, 74, .15);
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-family: var(--font-serif);
+      cursor: pointer;
+      transition: all var(--transition);
+      position: relative;
+    }
+
+    .decade-btn::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      transition: border-color var(--transition);
+    }
+
+    .decade-btn:hover,
+    .decade-btn.active {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(14, 165, 233, 0.05));
+      border-color: var(--amber);
+      color: var(--amber);
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.15);
+      transform: scale(1.1);
+    }
+
+    .decade-btn.active::before {
+      border-color: var(--gold);
+    }
+
+    /* ----- RESULTS ----- */
+    .results-section {
+      padding: 30px 40px 140px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 24px;
+    }
+
+    /* Song Card */
+    .song-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition), background var(--transition);
+      position: relative;
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.05);
+    }
+
+    .song-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .4), 0 0 30px var(--amber-glow);
+      border-color: rgba(212, 163, 74, .25);
+    }
+
+    .song-card.playing {
+      border-color: var(--gold);
+    }
+
+    .song-card.playing::after {
+      content: '♫';
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: var(--bg-deep);
+      display: grid;
+      place-items: center;
+      font-size: .9rem;
+      font-weight: 700;
+      animation: pulse-glow 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+
+      0%,
+      100% {
+        box-shadow: 0 0 8px var(--amber-glow);
+      }
+
+      50% {
+        box-shadow: 0 0 20px var(--amber-glow);
+      }
+    }
+
+    .card-art {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-bottom: 1px solid rgba(212, 163, 74, .06);
+      transition: filter var(--transition);
+    }
+
+    .song-card:hover .card-art {
+      filter: brightness(1.08);
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: .95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .card-artist {
+      color: var(--text-muted);
+      font-size: .82rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-year {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--amber);
+      font-size: .72rem;
+      font-weight: 600;
+    }
+
+    /* Loader */
+    .loader {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--text-muted);
+    }
+
+    .vinyl-spinner {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, #1e293b, #334155, #1e293b);
+      border: 3px solid var(--gold);
+      margin: 0 auto 16px;
+      display: grid;
+      place-items: center;
+      animation: spin 1.2s linear infinite;
+    }
+
+    .vinyl-spinner-hole {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--gold);
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    /* ----- PLAYER BAR ----- */
+    .player-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 24px;
+      background: var(--bg-player);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border-color);
+      box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.05);
+      transition: transform .4s ease, background var(--transition);
+    }
+
+    .player-bar.hidden {
+      transform: translateY(100%);
+      pointer-events: none;
+    }
+
+    .player-art {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius);
+      object-fit: cover;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, .4);
+    }
+
+    .player-info {
+      flex: 0 0 180px;
+      overflow: hidden;
+    }
+
+    .player-title {
+      display: block;
+      font-weight: 600;
+      font-size: .9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-artist {
+      display: block;
+      color: var(--text-muted);
+      font-size: .78rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ctrl-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .ctrl-btn svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .ctrl-btn:hover {
+      background: rgba(212, 163, 74, .15);
+      color: var(--gold);
+    }
+
+    .play-btn {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--gold), var(--amber));
+      color: #fff;
+    }
+
+    .play-btn:hover {
+      opacity: .9;
+      background: linear-gradient(135deg, var(--gold), var(--amber));
+      color: #fff;
+    }
+
+    .player-progress {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 4px;
+      border-radius: 4px;
+      background: rgba(212, 163, 74, .12);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--gold), var(--orange));
+      transition: width .1s linear;
+    }
+
+    .player-time {
+      font-size: .72rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .close-player {
+      font-size: .9rem;
+    }
+
+    /* Auth UI */
+    .auth-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 30px;
+      background: rgba(59, 130, 246, 0.1);
+      transition: background 0.3s;
+    }
+
+    .user-profile:hover {
+      background: rgba(59, 130, 246, 0.2);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--gold);
+    }
+
+    .user-name {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    #logoutBtn {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .settings-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      transition: color 0.3s;
+    }
+
+    .settings-btn:hover {
+      color: var(--gold);
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .settings-modal {
+      background: var(--bg-surface);
+      width: 90%;
+      max-width: 450px;
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      position: relative;
+      border: 1px solid var(--border-color);
+      transition: background var(--transition);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .setting-group {
+      margin-bottom: 20px;
+    }
+
+    .setting-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+
+    .setting-control {
+      width: 100%;
+      padding: 10px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: var(--font-sans);
+    }
+
+    .toggle-switch {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .toggle-slider {
+      width: 44px;
+      height: 22px;
+      background: #cbd5e1;
+      border-radius: 20px;
+      position: relative;
+      transition: background 0.3s;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+
+    input:checked+.toggle-slider {
+      background: var(--gold);
+    }
+
+    input:checked+.toggle-slider::before {
+      transform: translateX(22px);
+    }
+
+    .hidden-input {
+      display: none;
+    }
+
+    /* Theme-specific styles that can be toggled via JS on the body */
+    body.theme-dark {
+      --bg-deep: #000000;
+      --bg-surface: #0d0d0d;
+      --bg-card: #111111;
+      --bg-glass: rgba(0, 0, 0, 0.8);
+      --bg-header: rgba(0, 0, 0, 0.95);
+      --bg-player: rgba(13, 13, 13, 0.98);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    body.theme-light {
+      --bg-deep: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-card: #f1f5f9;
+      --bg-header: rgba(255, 255, 255, 0.9);
+      --bg-player: rgba(255, 255, 255, 0.95);
+      --border-color: rgba(59, 130, 246, 0.1);
+      --text: #0f172a;
+      --text-muted: #475569;
+    }
+
+    /* ------ Utilities ------ */
+    .hidden {
+      display: none !important;
+    }
+
+    /* ------ Responsive ------ */
+    @media (max-width: 900px) {
+      .hero-content {
+        flex-direction: column;
+        gap: 40px;
+        text-align: center;
+      }
+
+      .hero-text h1 {
+        font-size: 2.6rem;
+      }
+
+      .hero-subtitle {
+        margin-inline: auto;
+      }
+
+      .search-wrapper {
+        margin-inline: auto;
+      }
+
+      .vinyl-record {
+        width: 240px;
+        height: 240px;
+      }
+
+      .vinyl-label {
+        width: 70px;
+        height: 70px;
+      }
+
+      .label-text {
+        font-size: .6rem;
+      }
+
+      .vinyl-arm {
+        height: 130px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .site-header {
+        padding: 12px 20px;
+      }
+
+      .main-nav {
+        gap: 20px;
+      }
+
+      .hero {
+        padding: 100px 20px 40px;
+      }
+
+      .decade-section,
+      .results-section {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .results-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 14px;
+      }
+
+      .player-bar {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px 14px;
+      }
+
+      .player-info {
+        flex: 1 1 120px;
+      }
+
+      .player-progress {
+        flex: 1 1 100%;
+        order: 5;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ===== HEADER / NAV ===== -->
+  <header class="site-header">
+    <div class="logo">
+      <div class="vinyl-icon">
+        <div class="vinyl-hole"></div>
+      </div>
+      <span class="logo-text">Retrowave</span>
+    </div>
+    <nav class="main-nav">
+      <a href="#" class="nav-link active" data-section="hero">Home</a>
+      <a href="#" class="nav-link" data-section="search">Search</a>
+      <a href="#" class="nav-link" data-section="decades">Decades</a>
+      <a href="#" class="nav-link" data-section="library">Library</a>
+      <a href="#" class="nav-link" data-section="playlists">Playlists</a>
+    </nav>
+    <div class="auth-container">
+      <div id="g_id_signin"></div>
+      <div id="userProfile" class="user-profile hidden">
+        <img id="userAvatar" class="user-avatar" src="" alt="User">
+        <div>
+          <span id="userName" class="user-name"></span>
+          <br>
+          <span id="logoutBtn">Logout</span>
+        </div>
+      </div>
+      <button id="openSettings" class="settings-btn" title="Settings">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+          </path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="hero">
+    <div class="hero-bg-noise"></div>
+
+    <div class="album-bg-container">
+      <img src="https://upload.wikimedia.org/wikipedia/en/3/3b/Dark_Side_of_the_Moon.png" alt="Pink Floyd"
+        class="bg-album album-pf">
+      <img src="beatles_abbey_road.png" alt="The Beatles" class="bg-album album-beatles">
+      <img src="king_crimson_custom.png" alt="King Crimson" class="bg-album album-kc">
+      <img src="led_zeppelin_final.png" alt="Led Zeppelin" class="bg-album album-lz">
+      <img src="https://upload.wikimedia.org/wikipedia/en/a/ae/Drake_-_Take_Care_cover.jpg" alt="Drake"
+        class="bg-album album-drake">
+      <img src="travis_astroworld.png" alt="Travis Scott" class="bg-album album-travis">
+      <img src="https://upload.wikimedia.org/wikipedia/en/c/c1/The_Weeknd_-_After_Hours.png" alt="The Weeknd"
+        class="bg-album album-weeknd">
+      <img src="https://upload.wikimedia.org/wikipedia/en/5/51/Kendrick_Lamar_-_Damn.png" alt="Kendrick Lamar"
+        class="bg-album album-kendrick">
+      <img src="kanye_mbdtf.png" alt="Kanye West" class="bg-album album-kanye">
+      <img src="gnr_illusion.png" alt="Guns N' Roses" class="bg-album album-gnr">
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-vinyl-container">
+        <div class="vinyl-record spinning">
+          <div class="vinyl-grooves"></div>
+          <div class="vinyl-label">
+            <span class="label-text">1970 – 2026</span>
+          </div>
+        </div>
+        <div class="vinyl-arm"></div>
+      </div>
+      <div class="hero-text">
+        <h1>Time Travel<br>Through <span class="gold-text">Music</span></h1>
+        <p class="hero-subtitle">Discover iconic songs from every decade — from the golden age of vinyl to today's
+          chart-toppers.</p>
+        <div class="search-wrapper" id="search">
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search any song, artist, or album…" autocomplete="off">
+            <button id="searchBtn" class="search-btn">Search</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DECADE SELECTOR ===== -->
+  <section class="decade-section" id="decades">
+    <h2 class="section-title">Browse by <span class="gold-text">Decade</span></h2>
+    <div class="decade-dial">
+      <button class="decade-btn" data-decade="1970">70s</button>
+      <button class="decade-btn" data-decade="1980">80s</button>
+      <button class="decade-btn" data-decade="1990">90s</button>
+      <button class="decade-btn" data-decade="2000">00s</button>
+      <button class="decade-btn" data-decade="2010">10s</button>
+      <button class="decade-btn active" data-decade="2020">20s</button>
+    </div>
+  </section>
+
+  <!-- ===== RESULTS / TRENDING ===== -->
+  <section class="results-section">
+    <h2 class="section-title" id="resultsTitle">Trending Now</h2>
+    <div class="results-grid" id="resultsGrid">
+      <!-- Cards injected by JS -->
+    </div>
+    <div class="loader hidden" id="loader">
+      <div class="vinyl-spinner">
+        <div class="vinyl-spinner-hole"></div>
+      </div>
+      <p>Searching the archives…</p>
+    </div>
+    <p class="no-results hidden" id="noResults">No tracks found. Try a different search!</p>
+  </section>
+
+  <!-- ===== LIBRARY SECTION ===== -->
+  <section id="library" class="results-section hidden">
+    <h2 class="section-title">Your <span class="gold-text">Library</span></h2>
+    <div id="libraryGrid" class="results-grid">
+      <!-- Liked songs injected by JS -->
+    </div>
+  </section>
+
+  <!-- ===== PLAYLISTS SECTION ===== -->
+  <section id="playlists" class="results-section hidden">
+    <div class="section-header"
+      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+      <h2 class="section-title" style="margin-bottom: 0;">Your Playlists</h2>
+      <button id="createNewPlaylistBtn" class="search-btn">Create New</button>
+    </div>
+    <div id="playlistList" class="results-grid">
+      <!-- Playlists will be rendered here -->
+    </div>
+    <div id="playlistSongs" class="hidden">
+      <button id="backToPlaylists" class="ctrl-btn"
+        style="width: auto; padding: 0 15px; border-radius: 20px; margin-bottom: 20px;">&larr; Back</button>
+      <h3 id="currentPlaylistName" class="section-title"></h3>
+      <div id="playlistSongsGrid" class="results-grid"></div>
+    </div>
+  </section>
+
+  <!-- ===== PLAYER BAR ===== -->
+  <div class="player-bar hidden" id="playerBar">
+    <img class="player-art" id="playerArt" src="" alt="Album art">
+    <div class="player-info">
+      <span class="player-title" id="playerTitle">—</span>
+      <span class="player-artist" id="playerArtist">—</span>
+    </div>
+    <div class="player-controls">
+      <button class="ctrl-btn" id="prevBtn">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
+        </svg>
+      </button>
+      <button class="ctrl-btn play-btn" id="playPauseBtn">
+        <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+        <svg class="icon-pause hidden" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 19h4V5H6zm8-14v14h4V5z" />
+        </svg>
+      </button>
+      <button class="ctrl-btn" id="nextBtn">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 18l8.5-6L6 6v12zm2 0h2V6h-2v12z" transform="scale(-1,1) translate(-24,0)" />
+        </svg>
+      </button>
+    </div>
+    <div class="player-progress">
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <span class="player-time" id="playerTime">0:00 / 0:00</span>
+    </div>
+    <button class="ctrl-btn close-player" id="closePlayer">✕</button>
+  </div>
+
+  <!-- ===== SETTINGS MODAL ===== -->
+  <div class="modal-overlay" id="settingsModalOverlay">
+    <div class="settings-modal" id="settingsModal">
+      <div class="modal-header">
+        <h2 class="modal-title">App Settings</h2>
+        <button class="close-modal" id="closeSettings">✕</button>
+      </div>
+
+      <div class="setting-group">
+        <label class="setting-label">Theme</label>
+        <select class="setting-control" id="themeSelect">
+          <option value="retrowave">Retrowave (Default)</option>
+          <option value="dark">Dark Mode</option>
+          <option value="light">Light Mode</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label class="setting-label">Default Decade</label>
+        <select class="setting-control" id="defaultDecadeSelect">
+          <option value="2020">2020s</option>
+          <option value="2010">2010s</option>
+          <option value="2000">2000s</option>
+          <option value="1990">1990s</option>
+          <option value="1980">1980s</option>
+          <option value="1970">1970s</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label class="toggle-switch">
+          <input type="checkbox" id="autoplayToggle" class="hidden-input">
+          <div class="toggle-slider"></div>
+          <span class="setting-label" style="margin-bottom:0">Auto-play songs on selection</span>
+        </label>
+      </div>
+
+      <div style="margin-top: 30px; text-align: right;">
+        <button id="saveSettingsBtn" class="search-btn" style="width: 100%;">Save Preferences</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PLAYLIST MODAL ===== -->
+  <div class="modal-overlay" id="playlistModalOverlay">
+    <div class="settings-modal" id="playlistModal">
+      <div class="modal-header">
+        <h2 class="modal-title">Add to Playlist</h2>
+        <button class="close-modal" id="closePlaylistModal">✕</button>
+      </div>
+      <div class="setting-group" id="existingPlaylists"
+        style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
+      <div class="setting-group"
+        style="margin-top:20px; border-top: 1px solid rgba(59, 130, 246, 0.2); padding-top:20px;">
+        <label class="setting-label">Or create new playlist</label>
+        <input type="text" id="newPlaylistInput" class="setting-control" placeholder="Playlist name">
+      </div>
+      <div style="margin-top: 15px; text-align: right;">
+        <button id="createAndAddBtn" class="search-btn" style="width: 100%;">Create & Add</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="audioEl"></audio>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('[SW] Registered:', reg.scope))
+          .catch(err => console.warn('[SW] Failed:', err));
+      });
+    }
+  </script>
+</body>
+
+</html>

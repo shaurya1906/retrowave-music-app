@@ -1,0 +1,24 @@
+{
+    "name": "Retrowave",
+    "short_name": "Retrowave",
+    "description": "Time Travel Through Music — Discover and stream songs from every decade.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#0ea5e9",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
