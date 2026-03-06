@@ -16,7 +16,7 @@ from google.auth.transport import requests as google_requests
 from ytmusicapi import YTMusic
 import yt_dlp
 
-PORT = 5003
+PORT = int(os.environ.get("PORT", 5003))
 GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
 
 # In-memory session store

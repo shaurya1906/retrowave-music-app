@@ -1,0 +1,5 @@
+ytmusicapi
+yt-dlp
+google-auth
+google-auth-httplib2
+requests
