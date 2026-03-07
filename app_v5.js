@@ -767,13 +767,29 @@
             guestBtn.style.fontSize = '0.85rem';
             guestBtn.style.marginLeft = '10px';
             guestBtn.addEventListener('click', () => {
-                handleCredentialResponse({ credential: 'mock_guest_token' });
+                const surpriseModal = document.getElementById('surpriseModalOverlay');
+                if (surpriseModal) {
+                    surpriseModal.classList.add('active');
+                } else {
+                    // Fallback if modal isn't found
+                    handleCredentialResponse({ credential: 'mock_guest_token' });
+                }
             });
 
             btn.appendChild(guestBtn);
             btn.style.display = 'flex';
             btn.style.alignItems = 'center';
         }
+    }
+
+    // Attach listener for the surprise modal close button
+    const closeSurpriseBtn = document.getElementById('closeSurpriseModal');
+    if (closeSurpriseBtn) {
+        closeSurpriseBtn.addEventListener('click', () => {
+            const surpriseModal = document.getElementById('surpriseModalOverlay');
+            if (surpriseModal) surpriseModal.classList.remove('active');
+            handleCredentialResponse({ credential: 'mock_guest_token' });
+        });
     }
 
     async function handleCredentialResponse(response) {
