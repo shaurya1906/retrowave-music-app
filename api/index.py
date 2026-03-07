@@ -174,6 +174,7 @@ def yt_play():
 
     try:
         # Heavily optimized ydl_opts for bot detection bypass
+        # Trying a broader range of clients (Android, iOS, TV are more permissive)
         ydl_opts = {
             'format': 'bestaudio/best',
             'quiet': True,
@@ -181,36 +182,36 @@ def yt_play():
             'nocheckcertificate': True,
             'ignoreerrors': False,
             'logtostderr': True,
-            'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+            'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
             'referer': 'https://www.youtube.com/',
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'ios'],
+                    'player_client': ['android', 'ios', 'tvicap', 'mweb'],
                     'player_skip': ['web', 'web_embedded']
                 }
-            },
-            'youtube_include_dash_manifest': False,
-            'youtube_include_hls_manifest': False,
+            }
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             try:
+                # Try to extract stream URL
                 info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
                 if not info or 'url' not in info:
                     raise Exception("No stream URL in info")
                 stream_url = info['url']
             except Exception as extract_err:
-                print(f"Extraction failed: {extract_err}")
+                print(f"Extraction failed for {video_id}: {extract_err}")
                 return jsonify({"error": f"YouTube extraction failed: {str(extract_err)}"}), 500
             
-        req_headers = {
+        # Stream audio through proxy
+        headers = {
             'User-Agent': ydl_opts['user_agent'],
             'Referer': 'https://www.youtube.com/'
         }
         if range_header := request.headers.get('Range'):
-            req_headers['Range'] = range_header
+            headers['Range'] = range_header
 
-        req = urllib.request.Request(stream_url, headers=req_headers)
+        req = urllib.request.Request(stream_url, headers=headers)
         with urllib.request.urlopen(req) as response:
             def generate():
                 while True:

@@ -25,6 +25,9 @@
     const playerTime = document.getElementById('playerTime');
     const closePlayer = document.getElementById('closePlayer');
     const decadeBtns = document.querySelectorAll('.decade-btn');
+    const playerDebug = document.createElement('div');
+    playerDebug.style = "position:absolute; top:-30px; left:0; width:100%; text-align:center; font-size:10px; color:rgba(255,255,255,0.3); pointer-events:none;";
+    playerDebug.id = "playerDebug";
 
     // ---- State ----
     let tracks = [];
@@ -39,6 +42,7 @@
     let playlists = JSON.parse(localStorage.getItem('retrowave_playlists') || '{}');
     let library = JSON.parse(localStorage.getItem('retrowave_library') || '[]');
     let pendingSong = null;
+    let audioUnlocked = false;
 
     // Playback State
     let ytPlayer = null;
@@ -251,12 +255,15 @@
         playerTitle.textContent = "Loading...";
         playerArtist.textContent = t.trackName;
         playerBar.classList.remove('hidden');
+        if (!document.getElementById('playerDebug')) playerBar.appendChild(playerDebug);
+        updateDebugInfo("Initial Loading...");
 
         // Reset both players
         stopBoth();
 
         if (isPlayerReady) {
             playbackMode = 'yt';
+            updateDebugInfo("Attempting YT IFrame...");
             try {
                 ytPlayer.loadVideoById(t.videoId);
                 ytPlayer.playVideo();
@@ -265,20 +272,24 @@
                 playerArtist.textContent = t.artistName;
             } catch (err) {
                 console.warn("YT Play failed, falling back...", err);
+                updateDebugInfo("YT Failed, Falling back...");
                 fallbackToProxy(t);
             }
         } else {
             console.log("YT Player not ready, using proxy fallback");
+            updateDebugInfo("YT Not Ready, Using Proxy...");
             fallbackToProxy(t);
         }
     }
 
     function fallbackToProxy(t) {
         playbackMode = 'proxy';
+        updateDebugInfo("Proxy Mode Active");
         stopBoth();
         audioPlayer.src = `/api/yt/play?videoId=${t.videoId}`;
         audioPlayer.play().catch(e => {
             console.error("Proxy playback failed:", e);
+            updateDebugInfo(`Proxy Error: ${e.message || e}`);
             playerTitle.textContent = "Playback Error";
             isPlaying = false;
             updatePlayPauseIcon();
@@ -287,6 +298,23 @@
         playerTitle.textContent = t.trackName;
         playerArtist.textContent = t.artistName;
         updatePlayPauseIcon();
+    }
+
+    // Helpers
+    function unlockAudio() {
+        if (audioUnlocked) return;
+        audioPlayer.play().then(() => {
+            audioPlayer.pause();
+            audioUnlocked = true;
+            console.log("Audio Context Unlocked");
+        }).catch(() => { });
+    }
+    document.addEventListener('click', unlockAudio, { once: true });
+    document.addEventListener('touchstart', unlockAudio, { once: true });
+
+    function updateDebugInfo(msg) {
+        const debugEl = document.getElementById('playerDebug');
+        if (debugEl) debugEl.textContent = `MODE: ${playbackMode} | ${msg || ''}`;
     }
 
     function stopBoth() {
