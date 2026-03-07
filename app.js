@@ -333,6 +333,20 @@
     document.addEventListener('click', unlockAudio, { once: true });
     document.addEventListener('touchstart', unlockAudio, { once: true });
 
+    function showToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }, 100);
+    }
+
     function updateDebugInfo(msg) {
         const debugEl = document.getElementById('playerDebug');
         if (debugEl) debugEl.textContent = `MODE: ${playbackMode} | ${msg || ''}`;
