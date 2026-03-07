@@ -46,6 +46,8 @@ class RetrowaveHandler(http.server.SimpleHTTPRequestHandler):
             self._yt_search()
         elif self.path.startswith("/api/yt/stream"):
             self._yt_stream()
+        elif self.path.startswith("/api/yt/play"):
+            self._yt_play()
         elif self.path.startswith("/api/auth/me"):
             self._auth_me()
         elif self.path.startswith("/api/auth/logout"):
@@ -325,6 +327,52 @@ class RetrowaveHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             print(f"[YT Stream] Error: {e}")
             self._send_error(str(e))
+
+    def _yt_play(self):
+        params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        video_id = params.get('videoId', [''])[0]
+        
+        # [Strict Validation] Core_Systems_Engineer: Prevent injection
+        if not video_id or len(video_id) > 20 or not all(c.isalnum() or c in '-_' for c in video_id):
+            return self._send_error("Invalid videoId", 400)
+
+        print(f"[YT Play] Requesting Audio Proxy: {video_id}")
+        try:
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'quiet': True,
+                'no_warnings': True,
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+                stream_url = info['url']
+                
+            req_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+            
+            # [Optimization] Cloud_SRE_Lead: Forward Range header for minimal cold starts & bandwidth
+            if self.headers.get('Range'):
+                req_headers['Range'] = self.headers.get('Range')
+
+            req = urllib.request.Request(stream_url, headers=req_headers)
+            with urllib.request.urlopen(req) as response:
+                self.send_response(response.status)
+                
+                for header in ['Content-Type', 'Content-Length', 'Accept-Ranges', 'Content-Range']:
+                    if val := response.headers.get(header):
+                        self.send_header(header, val)
+                self.end_headers()
+                
+                while True:
+                    chunk = response.read(65536)
+                    if not chunk:
+                        break
+                    try:
+                        self.wfile.write(chunk)
+                    except BrokenPipeError:
+                        break
+                        
+        except Exception as e:
+            print(f"[YT Play] Stream Error: {e}")
 
     def _send_error(self, message, status=500):
         self.send_response(status)

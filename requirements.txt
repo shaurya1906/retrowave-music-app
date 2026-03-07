@@ -1,3 +1,5 @@
+flask
+flask-cors
 ytmusicapi
 yt-dlp
 google-auth

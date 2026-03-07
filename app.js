@@ -153,12 +153,8 @@
         playerBar.classList.remove('hidden');
 
         try {
-            // Resolve stream URL
-            const res = await fetch(`/api/yt/stream?videoId=${t.videoId}`);
-            const data = await res.json();
-            if (!data.success || !data.url) throw new Error("Stream resolution failed");
-
-            audioEl.src = data.url;
+            // Server-Side Edge Proxy Streaming
+            audioEl.src = `/api/yt/play?videoId=${t.videoId}`;
             audioEl.play();
             isPlaying = true;
 
