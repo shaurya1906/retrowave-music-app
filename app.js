@@ -24,7 +24,6 @@
     const progressFill = document.getElementById('progressFill');
     const playerTime = document.getElementById('playerTime');
     const closePlayer = document.getElementById('closePlayer');
-    const audioEl = document.getElementById('audioEl');
     const decadeBtns = document.querySelectorAll('.decade-btn');
 
     // ---- State ----
@@ -40,6 +39,50 @@
     let playlists = {};
     let library = [];
     let pendingSong = null;
+
+    // YT Player State
+    let ytPlayer = null;
+    let isPlayerReady = false;
+    let progressInterval = null;
+
+    // Define the global handler for YT API BEFORE app.js runs if possible, 
+    // but here inside the IIFE we can attach it to window.
+    window.onYouTubeIframeAPIReady = () => {
+        ytPlayer = new YT.Player('yt-player-container', {
+            height: '1',
+            width: '1',
+            videoId: '',
+            playerVars: {
+                'autoplay': 0,
+                'controls': 0,
+                'disablekb': 1,
+                'fs': 0,
+                'rel': 0,
+                'modestbranding': 1
+            },
+            events: {
+                'onReady': () => { isPlayerReady = true; console.log("YT Player Ready"); },
+                'onStateChange': onPlayerStateChange,
+                'onError': (e) => console.error("YT Player Error:", e)
+            }
+        });
+    };
+
+    function onPlayerStateChange(event) {
+        // YT.PlayerState.ENDED = 0
+        if (event.data === 0) {
+            handleEnded();
+        }
+        // YT.PlayerState.PLAYING = 1
+        if (event.data === 1) {
+            isPlaying = true;
+            startProgressLoop();
+        } else {
+            isPlaying = false;
+            stopProgressLoop();
+        }
+        updatePlayPauseIcon();
+    }
 
     const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
 
@@ -148,14 +191,19 @@
 
         // Highlight immediately
         highlightPlaying();
-        playerTitle.textContent = "Resolving stream...";
+        playerTitle.textContent = "Loading...";
         playerArtist.textContent = t.trackName;
         playerBar.classList.remove('hidden');
 
+        if (!isPlayerReady) {
+            console.warn("YT Player not ready yet...");
+            return;
+        }
+
         try {
-            // Server-Side Edge Proxy Streaming
-            audioEl.src = `/api/yt/play?videoId=${t.videoId}`;
-            audioEl.play();
+            // Using YouTube IFrame API instead of Server Proxy to bypass bot detection
+            ytPlayer.loadVideoById(t.videoId);
+            ytPlayer.playVideo();
             isPlaying = true;
 
             playerArt.src = t.artworkUrl100;
@@ -165,21 +213,51 @@
             updatePlayPauseIcon();
         } catch (err) {
             console.error(err);
-            playerTitle.textContent = "Error: Stream Timeout / Blocked";
-            playerArtist.textContent = "Try another song or refresh";
+            playerTitle.textContent = "Playback Error";
             isPlaying = false;
             updatePlayPauseIcon();
-
-            // Log to console for user to see
-            console.warn("Playback failed. This usually happens on serverless platforms due to YouTube blocking cloud IPs or function timeouts.");
         }
     }
 
     function togglePlay() {
-        if (!audioEl.src) return;
-        if (isPlaying) { audioEl.pause(); } else { audioEl.play(); }
-        isPlaying = !isPlaying;
+        if (!ytPlayer) return;
+        const state = ytPlayer.getPlayerState();
+        if (state === 1) { // 1 = Playing
+            ytPlayer.pauseVideo();
+            isPlaying = false;
+        } else {
+            ytPlayer.playVideo();
+            isPlaying = true;
+        }
         updatePlayPauseIcon();
+    }
+
+    function startProgressLoop() {
+        stopProgressLoop();
+        progressInterval = setInterval(() => {
+            if (ytPlayer && ytPlayer.getCurrentTime) {
+                const cur = ytPlayer.getCurrentTime();
+                const dur = ytPlayer.getDuration();
+                if (dur > 0) {
+                    const pct = (cur / dur) * 100;
+                    progressFill.style.width = pct + '%';
+                    playerTime.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
+                }
+            }
+        }, 500);
+    }
+
+    function stopProgressLoop() {
+        if (progressInterval) clearInterval(progressInterval);
+    }
+
+    function handleEnded() {
+        if (currentIndex < currentPlaybackList.length - 1) {
+            playSong(currentIndex + 1, currentPlaybackList);
+        } else {
+            isPlaying = false;
+            updatePlayPauseIcon();
+        }
     }
 
     function updatePlayPauseIcon() {
@@ -698,27 +776,20 @@
     if (prevBtn) prevBtn.addEventListener('click', () => playSong(currentIndex - 1, currentPlaybackList));
     if (nextBtn) nextBtn.addEventListener('click', () => playSong(currentIndex + 1, currentPlaybackList));
     if (closePlayer) closePlayer.addEventListener('click', () => {
-        audioEl.pause();
+        if (ytPlayer) ytPlayer.pauseVideo();
         isPlaying = false;
         playerBar.classList.add('hidden');
         highlightPlaying();
     });
 
     // Progress
-    audioEl.addEventListener('timeupdate', () => {
-        if (!audioEl.duration) return;
-        const pct = (audioEl.currentTime / audioEl.duration) * 100;
-        if (progressFill) progressFill.style.width = pct + '%';
-        if (playerTime) playerTime.textContent = `${formatTime(audioEl.currentTime)} / ${formatTime(audioEl.duration)}`;
-    });
-    audioEl.addEventListener('ended', () => {
-        if (currentIndex < currentPlaybackList.length - 1) playSong(currentIndex + 1, currentPlaybackList);
-        else { isPlaying = false; updatePlayPauseIcon(); }
-    });
     if (progressBar) progressBar.addEventListener('click', e => {
-        if (!audioEl.duration) return;
+        if (!ytPlayer || !ytPlayer.getDuration) return;
+        const dur = ytPlayer.getDuration();
+        if (dur <= 0) return;
         const rect = progressBar.getBoundingClientRect();
-        audioEl.currentTime = ((e.clientX - rect.left) / rect.width) * audioEl.duration;
+        const seekTo = ((e.clientX - rect.left) / rect.width) * dur;
+        ytPlayer.seekTo(seekTo, true);
     });
 
     // Decades
