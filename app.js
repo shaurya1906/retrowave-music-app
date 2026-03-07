@@ -36,8 +36,8 @@
         defaultDecade: '2020',
         autoplay: false
     };
-    let playlists = {};
-    let library = [];
+    let playlists = JSON.parse(localStorage.getItem('retrowave_playlists') || '{}');
+    let library = JSON.parse(localStorage.getItem('retrowave_library') || '[]');
     let pendingSong = null;
 
     // YT Player State
@@ -267,6 +267,11 @@
         pauseIcon.classList.toggle('hidden', !isPlaying);
     }
 
+    function saveToLocal() {
+        localStorage.setItem('retrowave_playlists', JSON.stringify(playlists));
+        localStorage.setItem('retrowave_library', JSON.stringify(library));
+    }
+
     // ---- Search Action ----
     async function doSearch(query) {
         console.log("doSearch called with query:", query);
@@ -441,6 +446,8 @@
             const data = await res.json();
             if (data.success) {
                 document.getElementById('playlistModalOverlay').classList.remove('active');
+                playlists[name].push(pendingSong);
+                saveToLocal();
                 fetchPlaylists();
             }
         } catch (err) {
@@ -566,6 +573,7 @@
             const data = await res.json();
             if (data.success) {
                 library = data.library;
+                saveToLocal();
                 // Refresh current view if needed
                 const activeSection = document.querySelector('.nav-link.active').dataset.section;
                 if (activeSection === 'library') renderLibrary();
