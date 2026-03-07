@@ -287,17 +287,38 @@
         updateDebugInfo("Proxy Mode Active");
         stopBoth();
         audioPlayer.src = `/api/yt/play?videoId=${t.videoId}`;
-        audioPlayer.play().catch(e => {
-            console.error("Proxy playback failed:", e);
-            updateDebugInfo(`Proxy Error: ${e.message || e}`);
-            playerTitle.textContent = "Playback Error";
-            isPlaying = false;
-            updatePlayPauseIcon();
+        audioPlayer.play().catch(async (e) => {
+            console.error("Proxy playback failed, trying direct URL...", e);
+            updateDebugInfo("Proxy Failed, Trying Direct URL...");
+            await fallbackToDirect(t);
         });
         playerArt.src = t.artworkUrl100;
         playerTitle.textContent = t.trackName;
         playerArtist.textContent = t.artistName;
         updatePlayPauseIcon();
+    }
+
+    async function fallbackToDirect(t) {
+        playbackMode = 'direct';
+        updateDebugInfo("Direct Mode Active");
+        try {
+            const res = await fetch(`/api/yt/stream_url?videoId=${t.videoId}`);
+            const data = await res.json();
+            if (data.success && data.url) {
+                audioPlayer.src = data.url;
+                await audioPlayer.play();
+                updateDebugInfo("Playing via Direct URL");
+            } else {
+                throw new Error(data.error || "No URL");
+            }
+        } catch (err) {
+            console.error("Direct playback failed:", err);
+            updateDebugInfo(`All Modes Failed: ${err.message}`);
+            playerTitle.textContent = "Playback Error";
+            isPlaying = false;
+            updatePlayPauseIcon();
+            showToast("Error playing song. YouTube may be blocking playback.");
+        }
     }
 
     // Helpers

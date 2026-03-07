@@ -166,6 +166,34 @@ def yt_stream():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/yt/stream_url', methods=['GET'])
+def yt_stream_url():
+    video_id = request.args.get('videoId', '')
+    if not video_id: return jsonify({"error": "Missing videoId"}), 400
+    try:
+        # sequence of clients to try for better resilience
+        clients = ['android', 'ios', 'tvicap', 'mweb']
+        for client in clients:
+            try:
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'quiet': True,
+                    'no_warnings': True,
+                    'nocheckcertificate': True,
+                    'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+                    'extractor_args': {'youtube': {'player_client': [client]}}
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+                    if info and 'url' in info:
+                        return jsonify({"success": True, "url": info['url'], "client": client})
+            except Exception as e:
+                print(f"Extraction with {client} failed: {e}")
+                continue
+        return jsonify({"error": "All extraction attempts failed"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/yt/play', methods=['GET'])
 def yt_play():
     video_id = request.args.get('videoId', '')
@@ -173,41 +201,33 @@ def yt_play():
         return jsonify({"error": "Invalid videoId"}), 400
 
     try:
-        # Heavily optimized ydl_opts for bot detection bypass
-        # Trying a broader range of clients (Android, iOS, TV are more permissive)
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'quiet': True,
-            'no_warnings': True,
-            'nocheckcertificate': True,
-            'ignoreerrors': False,
-            'logtostderr': True,
-            'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-            'referer': 'https://www.youtube.com/',
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['android', 'ios', 'tvicap', 'mweb'],
-                    'player_skip': ['web', 'web_embedded']
-                }
-            }
-        }
+        # Try a sequence of clients for extraction
+        clients = ['android', 'ios', 'tvicap', 'mweb']
+        stream_url = None
+        ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
         
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        for client in clients:
             try:
-                # Try to extract stream URL
-                info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
-                if not info or 'url' not in info:
-                    raise Exception("No stream URL in info")
-                stream_url = info['url']
-            except Exception as extract_err:
-                print(f"Extraction failed for {video_id}: {extract_err}")
-                return jsonify({"error": f"YouTube extraction failed: {str(extract_err)}"}), 500
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'quiet': True,
+                    'no_warnings': True,
+                    'nocheckcertificate': True,
+                    'user_agent': ua,
+                    'extractor_args': {'youtube': {'player_client': [client]}}
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+                    if info and 'url' in info:
+                        stream_url = info['url']
+                        break
+            except:
+                continue
+
+        if not stream_url:
+            return jsonify({"error": "YouTube extraction failed"}), 500
             
-        # Stream audio through proxy
-        headers = {
-            'User-Agent': ydl_opts['user_agent'],
-            'Referer': 'https://www.youtube.com/'
-        }
+        headers = {'User-Agent': ua, 'Referer': 'https://www.youtube.com/'}
         if range_header := request.headers.get('Range'):
             headers['Range'] = range_header
 
@@ -220,12 +240,11 @@ def yt_play():
                     yield chunk
 
             resp = Response(generate(), status=response.status)
-            for header in ['Content-Type', 'Content-Length', 'Accept-Ranges', 'Content-Range']:
-                if val := response.headers.get(header):
-                    resp.headers[header] = val
+            for h in ['Content-Type', 'Content-Length', 'Accept-Ranges', 'Content-Range']:
+                if val := response.headers.get(h):
+                    resp.headers[h] = val
             return resp
     except Exception as e:
-        print(f"General Proxy Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 # Fallback for local development
