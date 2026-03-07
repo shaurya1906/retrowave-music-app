@@ -153,6 +153,51 @@ def handle_library():
             
     return jsonify({"success": True, "library": session.get('library', [])})
 
+@app.route('/api/yt/stream', methods=['GET'])
+def yt_stream():
+    video_id = request.args.get('videoId', '')
+    if not video_id: return jsonify({"error": "Missing videoId"}), 400
+    try:
+        ydl_opts = {'format': 'bestaudio/best', 'quiet': True, 'no_warnings': True}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+            stream_url = info['url']
+        return jsonify({"success": True, "url": stream_url})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/yt/play', methods=['GET'])
+def yt_play():
+    video_id = request.args.get('videoId', '')
+    if not video_id or len(video_id) > 20 or not all(c.isalnum() or c in '-_' for c in video_id):
+        return jsonify({"error": "Invalid videoId"}), 400
+
+    try:
+        ydl_opts = {'format': 'bestaudio/best', 'quiet': True, 'no_warnings': True}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+            stream_url = info['url']
+            
+        req_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        if range_header := request.headers.get('Range'):
+            req_headers['Range'] = range_header
+
+        req = urllib.request.Request(stream_url, headers=req_headers)
+        with urllib.request.urlopen(req) as response:
+            def generate():
+                while True:
+                    chunk = response.read(65536)
+                    if not chunk: break
+                    yield chunk
+
+            resp = Response(generate(), status=response.status)
+            for header in ['Content-Type', 'Content-Length', 'Accept-Ranges', 'Content-Range']:
+                if val := response.headers.get(header):
+                    resp.headers[header] = val
+            return resp
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # Fallback for local development
 if __name__ == "__main__":
     app.run(port=5003)

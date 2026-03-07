@@ -40,49 +40,39 @@
     let library = JSON.parse(localStorage.getItem('retrowave_library') || '[]');
     let pendingSong = null;
 
-    // YT Player State
-    let ytPlayer = null;
-    let isPlayerReady = false;
+    // Audio Player State
+    const audioPlayer = document.getElementById('mainAudioPlayer');
     let progressInterval = null;
 
-    // Define the global handler for YT API BEFORE app.js runs if possible, 
-    // but here inside the IIFE we can attach it to window.
-    window.onYouTubeIframeAPIReady = () => {
-        ytPlayer = new YT.Player('yt-player-container', {
-            height: '1',
-            width: '1',
-            videoId: '',
-            playerVars: {
-                'autoplay': 0,
-                'controls': 0,
-                'disablekb': 1,
-                'fs': 0,
-                'rel': 0,
-                'modestbranding': 1
-            },
-            events: {
-                'onReady': () => { isPlayerReady = true; console.log("YT Player Ready"); },
-                'onStateChange': onPlayerStateChange,
-                'onError': (e) => console.error("YT Player Error:", e)
-            }
-        });
-    };
-
-    function onPlayerStateChange(event) {
-        // YT.PlayerState.ENDED = 0
-        if (event.data === 0) {
-            handleEnded();
-        }
-        // YT.PlayerState.PLAYING = 1
-        if (event.data === 1) {
-            isPlaying = true;
-            startProgressLoop();
-        } else {
-            isPlaying = false;
-            stopProgressLoop();
-        }
+    // Attach event listeners to the standard audio element
+    audioPlayer.addEventListener('play', () => {
+        isPlaying = true;
         updatePlayPauseIcon();
-    }
+    });
+
+    audioPlayer.addEventListener('pause', () => {
+        isPlaying = false;
+        updatePlayPauseIcon();
+    });
+
+    audioPlayer.addEventListener('timeupdate', () => {
+        if (audioPlayer.duration > 0) {
+            const cur = audioPlayer.currentTime;
+            const dur = audioPlayer.duration;
+            const pct = (cur / dur) * 100;
+            progressFill.style.width = pct + '%';
+            playerTime.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
+        }
+    });
+
+    audioPlayer.addEventListener('ended', handleEnded);
+
+    audioPlayer.addEventListener('error', (e) => {
+        console.error("Audio Player Error:", e);
+        playerTitle.textContent = "Playback Error";
+        isPlaying = false;
+        updatePlayPauseIcon();
+    });
 
     const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
 
@@ -195,16 +185,14 @@
         playerArtist.textContent = t.trackName;
         playerBar.classList.remove('hidden');
 
-        if (!isPlayerReady) {
-            console.warn("YT Player not ready yet...");
-            return;
-        }
-
         try {
-            // Using YouTube IFrame API instead of Server Proxy to bypass bot detection
-            ytPlayer.loadVideoById(t.videoId);
-            ytPlayer.playVideo();
-            isPlaying = true;
+            // Using standard audio element with server proxy
+            audioPlayer.src = `/api/yt/play?videoId=${t.videoId}`;
+            audioPlayer.play().catch(e => {
+                console.error("Autoplay prevented or error:", e);
+                isPlaying = false;
+                updatePlayPauseIcon();
+            });
 
             playerArt.src = t.artworkUrl100;
             playerTitle.textContent = t.trackName;
@@ -212,7 +200,7 @@
 
             updatePlayPauseIcon();
         } catch (err) {
-            console.error(err);
+            console.error("Playback error:", err);
             playerTitle.textContent = "Playback Error";
             isPlaying = false;
             updatePlayPauseIcon();
@@ -220,35 +208,13 @@
     }
 
     function togglePlay() {
-        if (!ytPlayer) return;
-        const state = ytPlayer.getPlayerState();
-        if (state === 1) { // 1 = Playing
-            ytPlayer.pauseVideo();
-            isPlaying = false;
+        if (!audioPlayer.src) return;
+        if (audioPlayer.paused) {
+            audioPlayer.play();
         } else {
-            ytPlayer.playVideo();
-            isPlaying = true;
+            audioPlayer.pause();
         }
         updatePlayPauseIcon();
-    }
-
-    function startProgressLoop() {
-        stopProgressLoop();
-        progressInterval = setInterval(() => {
-            if (ytPlayer && ytPlayer.getCurrentTime) {
-                const cur = ytPlayer.getCurrentTime();
-                const dur = ytPlayer.getDuration();
-                if (dur > 0) {
-                    const pct = (cur / dur) * 100;
-                    progressFill.style.width = pct + '%';
-                    playerTime.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
-                }
-            }
-        }, 500);
-    }
-
-    function stopProgressLoop() {
-        if (progressInterval) clearInterval(progressInterval);
     }
 
     function handleEnded() {
@@ -784,7 +750,7 @@
     if (prevBtn) prevBtn.addEventListener('click', () => playSong(currentIndex - 1, currentPlaybackList));
     if (nextBtn) nextBtn.addEventListener('click', () => playSong(currentIndex + 1, currentPlaybackList));
     if (closePlayer) closePlayer.addEventListener('click', () => {
-        if (ytPlayer) ytPlayer.pauseVideo();
+        audioPlayer.pause();
         isPlaying = false;
         playerBar.classList.add('hidden');
         highlightPlaying();
@@ -792,12 +758,10 @@
 
     // Progress
     if (progressBar) progressBar.addEventListener('click', e => {
-        if (!ytPlayer || !ytPlayer.getDuration) return;
-        const dur = ytPlayer.getDuration();
-        if (dur <= 0) return;
+        if (!audioPlayer.duration || audioPlayer.duration <= 0) return;
         const rect = progressBar.getBoundingClientRect();
-        const seekTo = ((e.clientX - rect.left) / rect.width) * dur;
-        ytPlayer.seekTo(seekTo, true);
+        const seekTo = ((e.clientX - rect.left) / rect.width) * audioPlayer.duration;
+        audioPlayer.currentTime = seekTo;
     });
 
     // Decades
