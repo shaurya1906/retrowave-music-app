@@ -1344,8 +1344,11 @@
   <audio id="mainAudioPlayer" style="display: none;"></audio>
 
   <!-- Hidden YouTube Player for Primary Playback -->
+  <!-- Note: Completely hidden (1x1 or opacity 0) players are often blocked on mobile. 
+       We use a "minimally visible" but off-screen approach. -->
   <div id="yt-player-container"
-    style="position: absolute; width: 1px; height: 1px; bottom: 0; left: 0; opacity: 0; pointer-events: none;"></div>
+    style="position: fixed; width: 200px; height: 200px; bottom: -1000px; left: -1000px; pointer-events: none; z-index: -1;">
+  </div>
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="app.js"></script>
