@@ -131,6 +131,13 @@ def yt_play():
                 'nocheckcertificate': True,
                 'extract_flat': False,
                 'skip_download': True,
+                # [Optimization] Cloud_SRE_Lead: Emulate mobile clients to bypass "Sign in to confirm you're not a bot"
+                'extractor_args': {
+                    'youtube': {
+                        'player_client': ['android', 'ios', 'web_creator'],
+                        'skip': ['hls', 'dash']
+                    }
+                }
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 # [Optimization] Reduced YouTube extraction overhead
