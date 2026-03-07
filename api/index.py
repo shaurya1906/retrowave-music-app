@@ -100,6 +100,8 @@ def yt_search():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+import requests as requests_lib
+
 @app.route('/api/yt/play', methods=['GET'])
 def yt_play():
     video_id = request.args.get('videoId', '')
@@ -107,26 +109,39 @@ def yt_play():
         return jsonify({"error": "Invalid videoId"}), 400
 
     try:
-        ydl_opts = {'format': 'bestaudio/best', 'quiet': True, 'no_warnings': True}
+        # [Optimization] Cloud_SRE_Lead: Extracting only the best audio stream
+        # This ensuring we get the highest bitrate (usually ~256k on YT Music)
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'quiet': True,
+            'no_warnings': True,
+            'nocheckcertificate': True, # Important for cloud environments
+            'extract_flat': False,
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
             stream_url = info['url']
-        
-        req_headers = {'User-Agent': 'Mozilla/5.0'}
+            bitrate = info.get('abr', 'unknown') # audio bitrate in kbps
+            print(f"[YT Play] Proxied {video_id} at {bitrate}kbps")
+
+        # [Proxy Implementation] Core_Systems_Engineer: Forwarding headers via requests_lib
+        req_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
         if request.headers.get('Range'):
             req_headers['Range'] = request.headers.get('Range')
 
-        proxy_req = urllib.request.Request(stream_url, headers=req_headers)
-        with urllib.request.urlopen(proxy_req) as response:
-            def generate():
-                while True:
-                    chunk = response.read(65536)
-                    if not chunk: break
-                    yield chunk
-            
-            headers = {h: response.headers.get(h) for h in ['Content-Type', 'Content-Length', 'Accept-Ranges', 'Content-Range'] if response.headers.get(h)}
-            return Response(generate(), status=response.status, headers=headers)
+        proxy_resp = requests_lib.get(stream_url, headers=req_headers, stream=True, timeout=10)
+        
+        excluded_headers = ['content-encoding', 'transfer-encoding', 'connection']
+        headers = [(name, value) for (name, value) in proxy_resp.raw.headers.items()
+                   if name.lower() not in excluded_headers]
+
+        return Response(proxy_resp.iter_content(chunk_size=1024*64),
+                        status=proxy_resp.status_code,
+                        headers=headers)
     except Exception as e:
+        print(f"[YT Play] Proxy Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/user/playlists', methods=['GET', 'POST'])
