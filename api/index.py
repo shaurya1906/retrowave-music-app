@@ -170,17 +170,17 @@ def yt_stream():
 def yt_stream_url():
     video_id = request.args.get('videoId', '')
     if not video_id: return jsonify({"error": "Missing videoId"}), 400
+    errors = []
     try:
-        # sequence of clients to try for better resilience
-        clients = ['android', 'ios', 'tvicap', 'mweb']
+        clients = ['web', 'android', 'ios', 'mweb', 'tvicap']
+        ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
         for client in clients:
             try:
                 ydl_opts = {
                     'format': 'bestaudio/best',
                     'quiet': True,
-                    'no_warnings': True,
                     'nocheckcertificate': True,
-                    'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+                    'user_agent': ua,
                     'extractor_args': {'youtube': {'player_client': [client]}}
                 }
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -188,30 +188,28 @@ def yt_stream_url():
                     if info and 'url' in info:
                         return jsonify({"success": True, "url": info['url'], "client": client})
             except Exception as e:
-                print(f"Extraction with {client} failed: {e}")
+                errors.append(f"{client}: {str(e)}")
                 continue
-        return jsonify({"error": "All extraction attempts failed"}), 500
+        return jsonify({"error": "All extraction attempts failed", "details": errors}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/yt/play', methods=['GET'])
 def yt_play():
     video_id = request.args.get('videoId', '')
-    if not video_id or len(video_id) > 20 or not all(c.isalnum() or c in '-_' for c in video_id):
-        return jsonify({"error": "Invalid videoId"}), 400
+    if not video_id: return jsonify({"error": "Missing videoId"}), 400
 
+    errors = []
+    stream_url = None
+    ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+    
     try:
-        # Try a sequence of clients for extraction
-        clients = ['android', 'ios', 'tvicap', 'mweb']
-        stream_url = None
-        ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
-        
+        clients = ['web', 'android', 'ios', 'mweb', 'tvicap']
         for client in clients:
             try:
                 ydl_opts = {
                     'format': 'bestaudio/best',
                     'quiet': True,
-                    'no_warnings': True,
                     'nocheckcertificate': True,
                     'user_agent': ua,
                     'extractor_args': {'youtube': {'player_client': [client]}}
@@ -221,11 +219,12 @@ def yt_play():
                     if info and 'url' in info:
                         stream_url = info['url']
                         break
-            except:
+            except Exception as e:
+                errors.append(f"{client}: {str(e)}")
                 continue
 
         if not stream_url:
-            return jsonify({"error": "YouTube extraction failed"}), 500
+            return jsonify({"error": "YouTube extraction failed", "details": errors}), 500
             
         headers = {'User-Agent': ua, 'Referer': 'https://www.youtube.com/'}
         if range_header := request.headers.get('Range'):
@@ -245,7 +244,7 @@ def yt_play():
                     resp.headers[h] = val
             return resp
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e), "trace": "proxy_stream_error"}), 500
 
 # Fallback for local development
 if __name__ == "__main__":
