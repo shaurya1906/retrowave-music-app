@@ -1340,9 +1340,14 @@
     </div>
   </div>
 
-  <!-- Hidden Audio Player for Proxy Streaming -->
+  <!-- Hidden Audio Player for Proxy Streaming Fallback -->
   <audio id="mainAudioPlayer" style="display: none;"></audio>
 
+  <!-- Hidden YouTube Player for Primary Playback -->
+  <div id="yt-player-container"
+    style="position: absolute; width: 1px; height: 1px; bottom: 0; left: 0; opacity: 0; pointer-events: none;"></div>
+
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script src="app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

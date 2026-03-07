@@ -40,39 +40,106 @@
     let library = JSON.parse(localStorage.getItem('retrowave_library') || '[]');
     let pendingSong = null;
 
-    // Audio Player State
+    // Playback State
+    let ytPlayer = null;
+    let isPlayerReady = false;
+    let playbackMode = 'yt'; // 'yt' or 'proxy'
     const audioPlayer = document.getElementById('mainAudioPlayer');
     let progressInterval = null;
 
-    // Attach event listeners to the standard audio element
+    // YT API Callback
+    window.onYouTubeIframeAPIReady = () => {
+        ytPlayer = new YT.Player('yt-player-container', {
+            height: '1',
+            width: '1',
+            videoId: '',
+            playerVars: {
+                'autoplay': 0,
+                'controls': 0,
+                'disablekb': 1,
+                'fs': 0,
+                'rel': 0,
+                'modestbranding': 1
+            },
+            events: {
+                'onReady': () => { isPlayerReady = true; console.log("YT Player Ready"); },
+                'onStateChange': onPlayerStateChange,
+                'onError': onPlayerError
+            }
+        });
+    };
+
+    function onPlayerStateChange(event) {
+        if (playbackMode !== 'yt') return;
+        // YT.PlayerState.ENDED = 0
+        if (event.data === 0) handleEnded();
+        // YT.PlayerState.PLAYING = 1
+        if (event.data === 1) {
+            isPlaying = true;
+            startProgressLoop();
+        } else {
+            isPlaying = false;
+            stopProgressLoop();
+        }
+        updatePlayPauseIcon();
+    }
+
+    function onPlayerError(event) {
+        console.warn("YT Player Error, falling back to proxy...", event);
+        const t = currentPlaybackList[currentIndex];
+        if (t) fallbackToProxy(t);
+    }
+
+    // Proxy Player Listeners
     audioPlayer.addEventListener('play', () => {
+        if (playbackMode !== 'proxy') return;
         isPlaying = true;
         updatePlayPauseIcon();
     });
 
     audioPlayer.addEventListener('pause', () => {
+        if (playbackMode !== 'proxy') return;
         isPlaying = false;
         updatePlayPauseIcon();
     });
 
     audioPlayer.addEventListener('timeupdate', () => {
+        if (playbackMode !== 'proxy') return;
         if (audioPlayer.duration > 0) {
-            const cur = audioPlayer.currentTime;
-            const dur = audioPlayer.duration;
-            const pct = (cur / dur) * 100;
-            progressFill.style.width = pct + '%';
-            playerTime.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
+            updateProgressUI(audioPlayer.currentTime, audioPlayer.duration);
         }
     });
 
-    audioPlayer.addEventListener('ended', handleEnded);
+    audioPlayer.addEventListener('ended', () => {
+        if (playbackMode === 'proxy') handleEnded();
+    });
 
     audioPlayer.addEventListener('error', (e) => {
-        console.error("Audio Player Error:", e);
+        if (playbackMode !== 'proxy') return;
+        console.error("Proxy Player Error:", e);
         playerTitle.textContent = "Playback Error";
         isPlaying = false;
         updatePlayPauseIcon();
     });
+
+    function updateProgressUI(cur, dur) {
+        const pct = (cur / dur) * 100;
+        progressFill.style.width = pct + '%';
+        playerTime.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
+    }
+
+    function startProgressLoop() {
+        stopProgressLoop();
+        progressInterval = setInterval(() => {
+            if (playbackMode === 'yt' && ytPlayer && ytPlayer.getCurrentTime) {
+                updateProgressUI(ytPlayer.getCurrentTime(), ytPlayer.getDuration());
+            }
+        }, 500);
+    }
+
+    function stopProgressLoop() {
+        if (progressInterval) clearInterval(progressInterval);
+    }
 
     const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
 
@@ -185,34 +252,58 @@
         playerArtist.textContent = t.trackName;
         playerBar.classList.remove('hidden');
 
-        try {
-            // Using standard audio element with server proxy
-            audioPlayer.src = `/api/yt/play?videoId=${t.videoId}`;
-            audioPlayer.play().catch(e => {
-                console.error("Autoplay prevented or error:", e);
-                isPlaying = false;
-                updatePlayPauseIcon();
-            });
+        // Reset both players
+        stopBoth();
 
-            playerArt.src = t.artworkUrl100;
-            playerTitle.textContent = t.trackName;
-            playerArtist.textContent = t.artistName;
-
-            updatePlayPauseIcon();
-        } catch (err) {
-            console.error("Playback error:", err);
-            playerTitle.textContent = "Playback Error";
-            isPlaying = false;
-            updatePlayPauseIcon();
+        if (isPlayerReady) {
+            playbackMode = 'yt';
+            try {
+                ytPlayer.loadVideoById(t.videoId);
+                ytPlayer.playVideo();
+                playerArt.src = t.artworkUrl100;
+                playerTitle.textContent = t.trackName;
+                playerArtist.textContent = t.artistName;
+            } catch (err) {
+                console.warn("YT Play failed, falling back...", err);
+                fallbackToProxy(t);
+            }
+        } else {
+            console.log("YT Player not ready, using proxy fallback");
+            fallbackToProxy(t);
         }
     }
 
+    function fallbackToProxy(t) {
+        playbackMode = 'proxy';
+        stopBoth();
+        audioPlayer.src = `/api/yt/play?videoId=${t.videoId}`;
+        audioPlayer.play().catch(e => {
+            console.error("Proxy playback failed:", e);
+            playerTitle.textContent = "Playback Error";
+            isPlaying = false;
+            updatePlayPauseIcon();
+        });
+        playerArt.src = t.artworkUrl100;
+        playerTitle.textContent = t.trackName;
+        playerArtist.textContent = t.artistName;
+        updatePlayPauseIcon();
+    }
+
+    function stopBoth() {
+        if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+        audioPlayer.pause();
+        audioPlayer.src = "";
+        stopProgressLoop();
+    }
+
     function togglePlay() {
-        if (!audioPlayer.src) return;
-        if (audioPlayer.paused) {
-            audioPlayer.play();
-        } else {
-            audioPlayer.pause();
+        if (playbackMode === 'yt' && ytPlayer) {
+            const state = ytPlayer.getPlayerState();
+            if (state === 1) ytPlayer.pauseVideo();
+            else ytPlayer.playVideo();
+        } else if (playbackMode === 'proxy') {
+            if (audioPlayer.paused) audioPlayer.play();
+            else audioPlayer.pause();
         }
         updatePlayPauseIcon();
     }
@@ -750,7 +841,7 @@
     if (prevBtn) prevBtn.addEventListener('click', () => playSong(currentIndex - 1, currentPlaybackList));
     if (nextBtn) nextBtn.addEventListener('click', () => playSong(currentIndex + 1, currentPlaybackList));
     if (closePlayer) closePlayer.addEventListener('click', () => {
-        audioPlayer.pause();
+        stopBoth();
         isPlaying = false;
         playerBar.classList.add('hidden');
         highlightPlaying();
@@ -758,10 +849,15 @@
 
     // Progress
     if (progressBar) progressBar.addEventListener('click', e => {
-        if (!audioPlayer.duration || audioPlayer.duration <= 0) return;
         const rect = progressBar.getBoundingClientRect();
-        const seekTo = ((e.clientX - rect.left) / rect.width) * audioPlayer.duration;
-        audioPlayer.currentTime = seekTo;
+        const pct = (e.clientX - rect.left) / rect.width;
+
+        if (playbackMode === 'yt' && ytPlayer && ytPlayer.getDuration) {
+            const dur = ytPlayer.getDuration();
+            if (dur > 0) ytPlayer.seekTo(pct * dur, true);
+        } else if (playbackMode === 'proxy' && audioPlayer.duration > 0) {
+            audioPlayer.currentTime = pct * audioPlayer.duration;
+        }
     });
 
     // Decades
