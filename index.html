@@ -158,6 +158,13 @@
       gap: 32px;
     }
 
+    #g_id_signin {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      /* Spaces out Google and Demo buttons */
+    }
+
     .nav-link {
       font-size: .9rem;
       font-weight: 500;
@@ -235,6 +242,18 @@
         margin-top: 20px;
         flex-direction: column;
         align-items: flex-start;
+        width: 100%;
+        gap: 15px;
+      }
+
+      #g_id_signin {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px;
+      }
+
+      #g_id_signin .search-btn {
+        margin-left: 0 !important;
         width: 100%;
       }
     }
