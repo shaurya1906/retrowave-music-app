@@ -187,6 +187,50 @@
       width: 100%;
     }
 
+    /* ----- MOBILE NAV ----- */
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .site-header {
+        padding: 16px 20px;
+      }
+
+      .mobile-menu-btn {
+        display: block;
+        margin-left: auto;
+        margin-right: 16px;
+      }
+
+      .main-nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 250px;
+        height: 100vh;
+        background: var(--bg-header);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-left: 1px solid var(--border-color);
+        flex-direction: column;
+        padding: 80px 30px 30px;
+        transition: right var(--transition);
+        box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
+        z-index: 99;
+      }
+
+      .main-nav.menu-open {
+        right: 0;
+      }
+
+    }
+
     /* ----- HERO ----- */
     .hero {
       position: relative;
@@ -1109,6 +1153,15 @@
       </div>
       <span class="logo-text">Retrowave</span>
     </div>
+
+    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Menu">
+      <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" fill="none">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
     <nav class="main-nav">
       <a href="#" class="nav-link active" data-section="hero">Home</a>
       <a href="#" class="nav-link" data-section="search">Search</a>

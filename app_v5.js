@@ -28,6 +28,32 @@
     const playerDebug = document.createElement('div');
     playerDebug.style = "position:absolute; top:-30px; left:0; width:100%; text-align:center; font-size:10px; color:rgba(255,255,255,0.3); pointer-events:none;";
     playerDebug.id = "playerDebug";
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mainNav = document.getElementById('mainNav'); // Assuming I need to add this ID
+
+    // ---- Mobile Menu Logic ----
+    if (mobileMenuBtn && document.querySelector('.main-nav')) {
+        const navElement = document.querySelector('.main-nav');
+        mobileMenuBtn.addEventListener('click', () => {
+            navElement.classList.toggle('menu-open');
+        });
+
+        // Close menu when a link is clicked
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                navElement.classList.remove('menu-open');
+            });
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', (e) => {
+            if (navElement.classList.contains('menu-open') &&
+                !navElement.contains(e.target) &&
+                !mobileMenuBtn.contains(e.target)) {
+                navElement.classList.remove('menu-open');
+            }
+        });
+    }
 
     // ---- State ----
     let tracks = [];
