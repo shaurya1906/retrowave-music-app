@@ -165,9 +165,13 @@
             updatePlayPauseIcon();
         } catch (err) {
             console.error(err);
-            playerTitle.textContent = "Error playing song";
+            playerTitle.textContent = "Error: Stream Timeout / Blocked";
+            playerArtist.textContent = "Try another song or refresh";
             isPlaying = false;
             updatePlayPauseIcon();
+
+            // Log to console for user to see
+            console.warn("Playback failed. This usually happens on serverless platforms due to YouTube blocking cloud IPs or function timeouts.");
         }
     }
 

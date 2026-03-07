@@ -101,6 +101,11 @@ def yt_search():
         return jsonify({"error": str(e)}), 500
 
 import requests as requests_lib
+import time
+
+# In-memory caches (Reset on function cold starts, but useful for retries/scrubbing)
+SESSIONS = {}
+STREAM_URL_CACHE = {} # video_id -> (url, expiry)
 
 @app.route('/api/yt/play', methods=['GET'])
 def yt_play():
@@ -108,41 +113,58 @@ def yt_play():
     if not video_id or len(video_id) > 20 or not all(c.isalnum() or c in '-_' for c in video_id):
         return jsonify({"error": "Invalid videoId"}), 400
 
+    print(f"[YT Play] Request for {video_id}")
+    
     try:
-        # [Optimization] Cloud_SRE_Lead: Extracting only the best audio stream
-        # This ensuring we get the highest bitrate (usually ~256k on YT Music)
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'quiet': True,
-            'no_warnings': True,
-            'nocheckcertificate': True, # Important for cloud environments
-            'extract_flat': False,
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
-            stream_url = info['url']
-            bitrate = info.get('abr', 'unknown') # audio bitrate in kbps
-            print(f"[YT Play] Proxied {video_id} at {bitrate}kbps")
+        # Check Cache first (Vercel warm starts can benefit)
+        cached_url, expiry = STREAM_URL_CACHE.get(video_id, (None, 0))
+        if cached_url and time.time() < expiry:
+            print(f"[YT Play] Using cached URL for {video_id}")
+            stream_url = cached_url
+        else:
+            print(f"[YT Play] Extracting info for {video_id}...")
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'quiet': True,
+                'no_warnings': True,
+                'nocheckcertificate': True,
+                'extract_flat': False,
+                'skip_download': True,
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                # [Optimization] Reduced YouTube extraction overhead
+                info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+                stream_url = info['url']
+                # Cache for 2 hours (YouTube URLs usually last 6 hours)
+                STREAM_URL_CACHE[video_id] = (stream_url, time.time() + 7200)
+                print(f"[YT Play] Extraction successful for {video_id}")
 
-        # [Proxy Implementation] Core_Systems_Engineer: Forwarding headers via requests_lib
+        # [Proxy Implementation] Forwarding range headers for better browser compatibility
         req_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
         if request.headers.get('Range'):
             req_headers['Range'] = request.headers.get('Range')
 
-        proxy_resp = requests_lib.get(stream_url, headers=req_headers, stream=True, timeout=10)
+        print(f"[YT Play] Proxying stream from YouTube...")
+        # Reduce timeout to 5s to fail-fast if YouTube is blocking Vercel
+        proxy_resp = requests_lib.get(stream_url, headers=req_headers, stream=True, timeout=5)
         
-        excluded_headers = ['content-encoding', 'transfer-encoding', 'connection']
+        excluded_headers = ['content-encoding', 'transfer-encoding', 'connection', 'access-control-allow-origin']
         headers = [(name, value) for (name, value) in proxy_resp.raw.headers.items()
                    if name.lower() not in excluded_headers]
+
+        # Ensure Content-Type is correct
+        if not any(h[0].lower() == 'content-type' for h in headers):
+            headers.append(('Content-Type', 'audio/mpeg'))
 
         return Response(proxy_resp.iter_content(chunk_size=1024*64),
                         status=proxy_resp.status_code,
                         headers=headers)
     except Exception as e:
-        print(f"[YT Play] Proxy Error: {e}")
-        return jsonify({"error": str(e)}), 500
+        print(f"[YT Play] Critical Error: {str(e)}")
+        # Provide more detail for Vercel logs
+        return jsonify({"error": "Streaming failed", "details": str(e)}), 500
 
 @app.route('/api/user/playlists', methods=['GET', 'POST'])
 def handle_playlists():
