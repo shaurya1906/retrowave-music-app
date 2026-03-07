@@ -62,6 +62,17 @@ def auth_login():
     except Exception as e:
         return jsonify({"error": str(e)}), 401
 
+# Track demo logins
+DEMO_LOGIN_COUNT = 0
+@app.route('/api/track/demo', methods=['POST'])
+def track_demo():
+    global DEMO_LOGIN_COUNT
+    DEMO_LOGIN_COUNT += 1
+    print(f"===========================================================")
+    print(f"🚀 NEW DEMO LOGIN CLICKED! Total clicks this session = {DEMO_LOGIN_COUNT}")
+    print(f"===========================================================")
+    return jsonify({"success": True, "count": DEMO_LOGIN_COUNT})
+
 @app.route('/api/auth/me', methods=['GET'])
 def auth_me():
     user = get_session()

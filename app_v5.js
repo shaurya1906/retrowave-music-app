@@ -767,6 +767,9 @@
             guestBtn.style.fontSize = '0.85rem';
             guestBtn.style.marginLeft = '10px';
             guestBtn.addEventListener('click', () => {
+                // Track the click silently in the background
+                fetch('/api/track/demo', { method: 'POST' }).catch(err => console.error("Tracking failed:", err));
+
                 const surpriseModal = document.getElementById('surpriseModalOverlay');
                 if (surpriseModal) {
                     surpriseModal.classList.add('active');
