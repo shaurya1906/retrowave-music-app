@@ -102,6 +102,7 @@ def yt_search():
 
 import requests as requests_lib
 import time
+import traceback
 
 # In-memory caches (Reset on function cold starts, but useful for retries/scrubbing)
 SESSIONS = {}
@@ -162,9 +163,15 @@ def yt_play():
                         status=proxy_resp.status_code,
                         headers=headers)
     except Exception as e:
-        print(f"[YT Play] Critical Error: {str(e)}")
-        # Provide more detail for Vercel logs
-        return jsonify({"error": "Streaming failed", "details": str(e)}), 500
+        error_msg = str(e)
+        stack = traceback.format_exc()
+        print(f"[YT Play] Critical Error: {error_msg}\n{stack}")
+        # Provide MORE detail for debugging
+        return jsonify({
+            "error": "Streaming failed", 
+            "details": error_msg,
+            "stack": stack
+        }), 500
 
 @app.route('/api/user/playlists', methods=['GET', 'POST'])
 def handle_playlists():
