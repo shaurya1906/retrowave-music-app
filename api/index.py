@@ -173,22 +173,35 @@ def yt_play():
         return jsonify({"error": "Invalid videoId"}), 400
 
     try:
-        # Optimized ydl_opts for resilience
+        # Heavily optimized ydl_opts for bot detection bypass
         ydl_opts = {
             'format': 'bestaudio/best',
             'quiet': True,
             'no_warnings': True,
             'nocheckcertificate': True,
-            'ignoreerrors': True,
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'ignoreerrors': False,
+            'logtostderr': True,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'referer': 'https://www.youtube.com/',
+            # Use 'mhtml' or other extractors if 'youtube' is blocked
+            'youtube_include_dash_manifest': False,
+            'youtube_include_hls_manifest': False,
         }
+        
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
-            if not info or 'url' not in info:
-                return jsonify({"error": "Could not extract stream URL. YouTube might be blocking this request."}), 500
-            stream_url = info['url']
+            try:
+                info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+                if not info or 'url' not in info:
+                    raise Exception("No stream URL in info")
+                stream_url = info['url']
+            except Exception as extract_err:
+                print(f"Extraction failed: {extract_err}")
+                return jsonify({"error": f"YouTube extraction failed: {str(extract_err)}"}), 500
             
-        req_headers = {'User-Agent': ydl_opts['user_agent']}
+        req_headers = {
+            'User-Agent': ydl_opts['user_agent'],
+            'Referer': 'https://www.youtube.com/'
+        }
         if range_header := request.headers.get('Range'):
             req_headers['Range'] = range_header
 
@@ -206,6 +219,7 @@ def yt_play():
                     resp.headers[header] = val
             return resp
     except Exception as e:
+        print(f"General Proxy Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 # Fallback for local development
