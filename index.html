@@ -154,6 +154,7 @@
 
     .main-nav {
       display: flex;
+      align-items: center;
       gap: 32px;
     }
 
@@ -219,6 +220,7 @@
         -webkit-backdrop-filter: blur(20px);
         border-left: 1px solid var(--border-color);
         flex-direction: column;
+        align-items: flex-start;
         padding: 80px 30px 30px;
         transition: right var(--transition);
         box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
@@ -229,6 +231,12 @@
         right: 0;
       }
 
+      .main-nav .auth-container {
+        margin-top: 20px;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+      }
     }
 
     /* ----- HERO ----- */
@@ -1168,27 +1176,29 @@
       <a href="#" class="nav-link" data-section="decades">Decades</a>
       <a href="#" class="nav-link" data-section="library">Library</a>
       <a href="#" class="nav-link" data-section="playlists">Playlists</a>
-    </nav>
-    <div class="auth-container">
-      <div id="g_id_signin"></div>
-      <div id="userProfile" class="user-profile hidden">
-        <img id="userAvatar" class="user-avatar" src="" alt="User">
-        <div>
-          <span id="userName" class="user-name"></span>
-          <br>
-          <span id="logoutBtn">Logout</span>
+
+      <!-- Moved inside nav for responsive menu -->
+      <div class="auth-container">
+        <div id="g_id_signin"></div>
+        <div id="userProfile" class="user-profile hidden">
+          <img id="userAvatar" class="user-avatar" src="" alt="User">
+          <div>
+            <span id="userName" class="user-name"></span>
+            <br>
+            <span id="logoutBtn">Logout</span>
+          </div>
         </div>
+        <button id="openSettings" class="settings-btn" title="Settings">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
+          </svg>
+        </button>
       </div>
-      <button id="openSettings" class="settings-btn" title="Settings">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path
-            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-          </path>
-        </svg>
-      </button>
-    </div>
+    </nav>
   </header>
 
   <!-- ===== HERO ===== -->
