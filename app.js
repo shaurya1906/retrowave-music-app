@@ -121,7 +121,7 @@
     audioPlayer.addEventListener('error', (e) => {
         if (playbackMode !== 'proxy') return;
         console.error("Proxy Player Error:", e);
-        playerTitle.textContent = "Playback Error";
+        playerTitle.textContent = "Mobile Sync Error";
         isPlaying = false;
         updatePlayPauseIcon();
     });
@@ -314,7 +314,7 @@
         } catch (err) {
             console.error("Direct playback failed:", err);
             updateDebugInfo(`All Modes Failed: ${err.message}`);
-            playerTitle.textContent = "Playback Error";
+            playerTitle.textContent = "Mobile Sync Error";
             isPlaying = false;
             updatePlayPauseIcon();
             showToast("Error playing song. YouTube may be blocking playback.");
