@@ -349,7 +349,7 @@
 
     function updateDebugInfo(msg) {
         const debugEl = document.getElementById('playerDebug');
-        if (debugEl) debugEl.textContent = `MODE: ${playbackMode} | ${msg || ''}`;
+        if (debugEl) debugEl.textContent = `V2.2 | MODE: ${playbackMode} | ${msg || ''}`;
     }
 
     function stopBoth() {
